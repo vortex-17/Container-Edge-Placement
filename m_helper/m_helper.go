@@ -1,3 +1,7 @@
+// MITACS Globalink 2021
+// this file contains all the helper functions and
+// Bin Packing algorithms used to place containers in edge computing
+
 package m_helper
 
 import (
@@ -50,6 +54,7 @@ func Initialise_container(resources, power int) Container {
 	return container
 }
 
+//this function checks the constraints and return true if satisfied
 func Check_resource_constraints(e Edge, c Container) bool {
 	if e.Resources > c.Resources {
 		if e.Power > c.Power {
@@ -59,6 +64,8 @@ func Check_resource_constraints(e Edge, c Container) bool {
 	return false
 }
 
+//this function sorts the edge nodes in ascending order
+// We sort the data according to Power only
 func Sort_data(Edge_list []Edge) []Edge {
 	for i := 0; i < len(Edge_list); i++ {
 		min := i
@@ -86,6 +93,7 @@ func Total_power_loss(Edge_list []Edge) int {
 	return tpl
 }
 
+//this function returns the list of active and inactive edge nodes from the list of edge nodes.
 func Active_inactive_list(Edge_list []Edge) ([]Edge, []Edge) {
 	//This function returns the list of active and inactive lists
 	var Active_list []Edge
@@ -108,6 +116,10 @@ func Active_inactive_list(Edge_list []Edge) ([]Edge, []Edge) {
 // #########################################################################
 
 func Bestfit(Edge_list []Edge, c Container) []Edge {
+
+	// The idea is to places the next item in the *tightest* spot.
+	// That is, put it in the bin so that the smallest empty space is left.
+
 	// fmt.Println(c)
 	active, inactive := Active_inactive_list(Edge_list)
 	if len(active) < 1 {
@@ -120,7 +132,7 @@ func Bestfit(Edge_list []Edge, c Container) []Edge {
 		return Edge_list
 	} else {
 		//There are few active nodes
-
+		//We sort the edge nodes because we want to find the node which has the tightest space.
 		active := Sort_data(active)
 		// fmt.Println("Äctive :", active)
 		for e := range active {
@@ -159,6 +171,10 @@ func Bestfit(Edge_list []Edge, c Container) []Edge {
 }
 
 func Firstfit(Edge_list []Edge, c Container) []Edge {
+
+	// When processing the next item, scan the previous bins in order and place the item in the first bin that fits.
+	// Start a new bin only if it does not fit in any of the existing bins.
+
 	// fmt.Println(c)
 	active, inactive := Active_inactive_list(Edge_list)
 	if len(active) < 1 {
@@ -208,6 +224,10 @@ func Firstfit(Edge_list []Edge, c Container) []Edge {
 }
 
 func Worstfit(Edge_list []Edge, c Container) []Edge {
+
+	// The idea is to places the next item in the least tight spot to even out the bins.
+	// That is, put it in the bin so that most empty space is left.
+
 	// fmt.Println(c)
 	active, inactive := Active_inactive_list(Edge_list)
 	if len(active) < 1 {

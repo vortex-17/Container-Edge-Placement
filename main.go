@@ -17,7 +17,7 @@ func Place_containers(Edge_list []m_helper.Edge, Container_list []m_helper.Conta
 
 func main() {
 	m_helper.Edge_num = 0
-	fmt.Println("Container placement in edge computing using Best Fit Algorithm")
+	fmt.Println("Container placement in edge computing using Bin packing Algorithms")
 	m_helper.Edge_list = append(m_helper.Edge_list, m_helper.Initialise_edge(200, 200))
 	m_helper.Edge_list = append(m_helper.Edge_list, m_helper.Initialise_edge(80, 150))
 	m_helper.Edge_list = append(m_helper.Edge_list, m_helper.Initialise_edge(120, 100))
@@ -33,11 +33,6 @@ func main() {
 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
-
-	// Bestfit(Edge_list, Container_list)
-	// Firstfit(Edge_list, Container_list)
-	// fmt.Println(Edge_list)
-	// fmt.Println("TPL :", Total_power_loss(Edge_list))
 
 	Place_containers(m_helper.Edge_list, m_helper.Container_list)
 }
