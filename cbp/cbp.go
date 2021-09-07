@@ -66,8 +66,23 @@ func Initialise_container(min_r, max_r, Container_class int) Container {
 	return container
 }
 
-func Check_resource_constraints(e Edge, c Container) bool {
-	if e.R_ul-e.R_cc >= c.Min_r {
+func Check_resource_constraints(e Edge, c Container, scaled bool) bool {
+	if scaled == true {
+		if e.R_total-e.R_cc >= c.Max_r {
+			return true
+		}
+		return false
+	} else {
+		if e.R_total-e.R_cc >= c.Min_r {
+			return true
+		}
+		return false
+	}
+
+}
+
+func Check_resource_constraints_Scaled(e Edge, c Container) bool {
+	if e.R_total-e.R_cc >= c.Max_r {
 		return true
 	}
 	return false
@@ -85,7 +100,7 @@ func Sort_data(Edge_list []Edge, c Container) []Edge {
 	for i := 0; i < len(Edge_list); i++ {
 		min := i
 		for j := i; j < len(Edge_list); j++ {
-			if math.Abs(float64(Edge_list[j].R_total-Edge_list[j].R_max-val)) <= math.Abs(float64(Edge_list[min].R_total-Edge_list[min].R_max-val)) {
+			if math.Abs((float64(Edge_list[j].R_total - Edge_list[j].R_max + val))) <= math.Abs((float64(Edge_list[min].R_total - Edge_list[min].R_max + val))) {
 				min = j
 			}
 		}
@@ -97,11 +112,11 @@ func Sort_data(Edge_list []Edge, c Container) []Edge {
 
 }
 
-func Sort_data_BB(Edge_list []Edge) []Edge {
+func Sort_data_BF(Edge_list []Edge) []Edge {
 	for i := 0; i < len(Edge_list); i++ {
 		min := i
 		for j := i; j < len(Edge_list); j++ {
-			if Edge_list[j].R_ul-Edge_list[j].R_cc <= Edge_list[min].R_ul-Edge_list[min].R_cc {
+			if (Edge_list[j].R_total - Edge_list[j].R_cc) <= (Edge_list[min].R_total - Edge_list[min].R_cc) {
 				min = j
 			}
 		}
@@ -116,7 +131,7 @@ func Sort_data_BB(Edge_list []Edge) []Edge {
 func Total_resource_loss(Edge_list []Edge) int {
 	tpl := 0
 	for e := range Edge_list {
-		if Edge_list[e].Active {
+		if len(Edge_list[e].Containers) > 0 {
 			tpl += (Edge_list[e].R_total - Edge_list[e].R_cc)
 		}
 	}
@@ -140,18 +155,18 @@ func Active_inactive_list(Edge_list []Edge) ([]Edge, []Edge) {
 	return Active_list, Inactive_list
 }
 
-func Class_constrained_best_fit(Edge_list []Edge, c Container) []Edge {
+func Class_constrained_best_fit(Edge_list []Edge, c Container, scaled bool) []Edge {
 
 	active, inactive := Active_inactive_list(Edge_list)
 	if len(active) < 1 {
 		// No edge nodes are active now. We will now active an edge node
 
-		fmt.Println("No edge nodes are active now. We will now active an edge node")
+		// fmt.Println("No edge nodes are active now. We will now active an edge node")
 		inactive[0].Active = true
 
 		// active = append(active, inactive...) //merging active and inactive list
 
-		Edge_list = Class_constrained_best_fit(append(active, inactive...), c)
+		Edge_list = Class_constrained_best_fit(append(active, inactive...), c, scaled)
 		// fmt.Println("Return list :", Edge_list)
 		return Edge_list
 
@@ -164,15 +179,21 @@ func Class_constrained_best_fit(Edge_list []Edge, c Container) []Edge {
 		// fmt.Println("Äctive :", active)
 
 		for e := range active {
-			if Check_resource_constraints(active[e], c) == true {
+			if Check_resource_constraints(active[e], c, scaled) == true {
 				if c.Container_class == 0 { //class A
 					active[e].R_max += c.Max_r
+					if scaled == true {
+						active[e].R_cc += c.Max_r
+					} else {
+						active[e].R_cc += c.Min_r
+					}
 				} else {
 					active[e].R_max += c.Min_r
+					active[e].R_cc += c.Min_r
 				}
 				active[e].Active = true
 				// active[e].R_ul -= c.Min_r
-				active[e].R_cc += c.Min_r
+				// active[e].R_cc += c.Min_r
 				active[e].Containers = append(active[e].Containers, c)
 				c.Active = true
 				break
@@ -183,16 +204,16 @@ func Class_constrained_best_fit(Edge_list []Edge, c Container) []Edge {
 		if c.Active == false {
 
 			// Could not place the container into any of the active edge node
-			fmt.Println("Could not place the container into any of the active edge node")
+			// fmt.Println("Could not place the container into any of the active edge node")
 
 			// Need to activate another node
 			if len(inactive) > 0 {
 				inactive[0].Active = true
 				// active = append(active, inactive...) //merging active and inactive list
-				Edge_list = Class_constrained_best_fit(append(active, inactive...), c)
+				Edge_list = Class_constrained_best_fit(append(active, inactive...), c, scaled)
 				return Edge_list
 			} else {
-				fmt.Println("Sorry, no edge nodes can accomodate the container ", c.Id)
+				// fmt.Println("Sorry, no edge nodes can accomodate the container ", c.Id)
 
 			}
 		}
@@ -205,18 +226,18 @@ func Class_constrained_best_fit(Edge_list []Edge, c Container) []Edge {
 
 }
 
-func Best_fit(Edge_list []Edge, c Container) []Edge {
+func Best_fit(Edge_list []Edge, c Container, scaled bool) []Edge {
 
 	active, inactive := Active_inactive_list(Edge_list)
 	if len(active) < 1 {
 		// No edge nodes are active now. We will now active an edge node
 
-		fmt.Println("No edge nodes are active now. We will now active an edge node")
+		// fmt.Println("No edge nodes are active now. We will now active an edge node")
 		inactive[0].Active = true
 
 		// active = append(active, inactive...) //merging active and inactive list
 
-		Edge_list = Best_fit(append(active, inactive...), c)
+		Edge_list = Best_fit(append(active, inactive...), c, scaled)
 		// fmt.Println("Return list :", Edge_list)
 		return Edge_list
 
@@ -225,19 +246,25 @@ func Best_fit(Edge_list []Edge, c Container) []Edge {
 		//There are few active nodes
 		//We sort the edge nodes because we want to find the node which has the tightest space.
 
-		active := Sort_data_BB(active)
+		active := Sort_data_BF(active)
 		// fmt.Println("Äctive :", active)
 
 		for e := range active {
-			if Check_resource_constraints(active[e], c) == true {
+			if Check_resource_constraints(active[e], c, scaled) == true {
 				if c.Container_class == 0 { //class A
 					active[e].R_max += c.Max_r
+					if scaled == true {
+						active[e].R_cc += c.Max_r
+					} else {
+						active[e].R_cc += c.Min_r
+					}
 				} else {
 					active[e].R_max += c.Min_r
+					active[e].R_cc += c.Min_r
 				}
 				active[e].Active = true
 				// active[e].R_ul -= c.Min_r
-				active[e].R_cc += c.Min_r
+
 				active[e].Containers = append(active[e].Containers, c)
 				c.Active = true
 				break
@@ -248,16 +275,16 @@ func Best_fit(Edge_list []Edge, c Container) []Edge {
 		if c.Active == false {
 
 			// Could not place the container into any of the active edge node
-			fmt.Println("Could not place the container into any of the active edge node")
+			// fmt.Println("Could not place the container into any of the active edge node")
 
 			// Need to activate another node
 			if len(inactive) > 0 {
 				inactive[0].Active = true
 				// active = append(active, inactive...) //merging active and inactive list
-				Edge_list = Best_fit(append(active, inactive...), c)
+				Edge_list = Best_fit(append(active, inactive...), c, scaled)
 				return Edge_list
 			} else {
-				fmt.Println("Sorry, no edge nodes can accomodate the container ", c.Id)
+				// fmt.Println("Sorry, no edge nodes can accomodate the container ", c.Id)
 
 			}
 		}
@@ -270,8 +297,141 @@ func Best_fit(Edge_list []Edge, c Container) []Edge {
 
 }
 
+// func Class_constrained_best_fit2(Edge_list []Edge, c Container) []Edge {
+
+// 	active, inactive := Active_inactive_list(Edge_list)
+// 	if len(active) < 1 {
+// 		// No edge nodes are active now. We will now active an edge node
+
+// 		fmt.Println("No edge nodes are active now. We will now active an edge node")
+// 		inactive[0].Active = true
+
+// 		// active = append(active, inactive...) //merging active and inactive list
+
+// 		Edge_list = Class_constrained_best_fit2(append(active, inactive...), c)
+// 		// fmt.Println("Return list :", Edge_list)
+// 		return Edge_list
+
+// 	} else {
+
+// 		//There are few active nodes
+// 		//We sort the edge nodes because we want to find the node which has the tightest space.
+
+// 		active := Sort_data(active, c)
+// 		// fmt.Println("Äctive :", active)
+// 		for e := range active {
+// 			if Check_resource_constraints_Scaled(active[e], c) == true {
+// 				// fmt.Printf("Edge | container: %+v | \n%+v\n ", active[e], c)
+// 				if c.Container_class == 0 { //class A
+// 					active[e].R_max += c.Max_r
+// 					active[e].R_cc += c.Max_r
+// 				} else {
+// 					active[e].R_max += c.Min_r
+// 					active[e].R_cc += c.Min_r
+// 				}
+// 				active[e].Active = true
+// 				// active[e].R_ul -= c.Min_r
+
+// 				active[e].Containers = append(active[e].Containers, c)
+// 				c.Active = true
+// 				break
+
+// 			}
+// 		}
+
+// 		if c.Active == false {
+
+// 			// Could not place the container into any of the active edge node
+// 			fmt.Println("Could not place the container into any of the active edge node")
+
+// 			// Need to activate another node
+// 			if len(inactive) > 0 {
+// 				inactive[0].Active = true
+// 				// active = append(active, inactive...) //merging active and inactive list
+// 				Edge_list = Class_constrained_best_fit2(append(active, inactive...), c)
+// 				return Edge_list
+// 			} else {
+// 				fmt.Println("Sorry, no edge nodes can accomodate the container ", c.Id)
+
+// 			}
+// 		}
+
+// 	}
+
+// 	// active = append(active, inactive...)
+// 	// fmt.Println("Result list: ", append(active, inactive...))
+// 	return append(active, inactive...)
+
+// }
+
+// func Best_fit2(Edge_list []Edge, c Container) []Edge {
+
+// 	active, inactive := Active_inactive_list(Edge_list)
+// 	if len(active) < 1 {
+// 		// No edge nodes are active now. We will now active an edge node
+
+// 		fmt.Println("No edge nodes are active now. We will now active an edge node")
+// 		inactive[0].Active = true
+
+// 		// active = append(active, inactive...) //merging active and inactive list
+
+// 		Edge_list = Best_fit2(append(active, inactive...), c)
+// 		// fmt.Println("Return list :", Edge_list)
+// 		return Edge_list
+
+// 	} else {
+
+// 		//There are few active nodes
+// 		//We sort the edge nodes because we want to find the node which has the tightest space.
+
+// 		active := Sort_data_BB(active)
+// 		// fmt.Println("Äctive :", active)
+
+// 		for e := range active {
+// 			if Check_resource_constraints_Scaled(active[e], c) == true {
+// 				if c.Container_class == 0 { //class A
+// 					active[e].R_max += c.Max_r
+// 					active[e].R_cc += c.Max_r
+// 				} else {
+// 					active[e].R_max += c.Min_r
+// 					active[e].R_cc += c.Min_r
+// 				}
+// 				active[e].Active = true
+// 				// active[e].R_ul -= c.Min_r
+// 				active[e].Containers = append(active[e].Containers, c)
+// 				c.Active = true
+// 				break
+
+// 			}
+// 		}
+
+// 		if c.Active == false {
+
+// 			// Could not place the container into any of the active edge node
+// 			fmt.Println("Could not place the container into any of the active edge node")
+
+// 			// Need to activate another node
+// 			if len(inactive) > 0 {
+// 				inactive[0].Active = true
+// 				// active = append(active, inactive...) //merging active and inactive list
+// 				Edge_list = Best_fit2(append(active, inactive...), c)
+// 				return Edge_list
+// 			} else {
+// 				fmt.Println("Sorry, no edge nodes can accomodate the container ", c.Id)
+
+// 			}
+// 		}
+
+// 	}
+
+// 	// active = append(active, inactive...)
+// 	// fmt.Println("Result list: ", append(active, inactive...))
+// 	return append(active, inactive...)
+
+// }
+
 func Check_scaling(e Edge, c Container) bool {
-	if e.R_cc+c.Max_r <= e.R_total {
+	if e.R_cc+(c.Max_r-c.Min_r) <= e.R_total {
 		return true
 	}
 
@@ -282,25 +442,35 @@ func Check_scaling(e Edge, c Container) bool {
 func Random_scaling_event(percent float64, Edge_list []Edge) ([]Edge, []Container) {
 	var Excess_container_list []Container
 	scaling_edge := int(percent * float64(len(Edge_list)))
-	fmt.Println(scaling_edge)
+	// fmt.Println(scaling_edge)
+
 	for i := 0; i < scaling_edge; i++ {
-		Edge_node := Edge_list[i]
-		fmt.Printf("%+v", Edge_node)
-		for c := range Edge_list[i].Containers {
-			container := Edge_list[i].Containers[0]
+		// Edge_node := Edge_list[i]
+		// fmt.Printf("\nScaling for edge node %+v", Edge_node)
+		container_list := Edge_list[i].Containers
+		index := 0
+		for _ = range container_list {
+			// fmt.Println("Value of c: ", c)
+			container := Edge_list[i].Containers[index]
 			if container.Container_class == 0 {
 				if Check_scaling(Edge_list[i], container) == true {
-					Edge_list[i].R_cc += container.Max_r
+					Edge_list[i].R_cc += (container.Max_r - container.Min_r)
+					index++
 				} else {
-					fmt.Println("Edge node at max capacity! Cannot scale the container, Removing the container")
+					// fmt.Println("Edge node at max capacity! Cannot scale the container, Removing the container")
 					Edge_list[i].R_max -= container.Max_r
 					Edge_list[i].R_cc -= container.Min_r
 					Excess_container_list = append(Excess_container_list, container)
 
-					Edge_list[i].Containers = append(Edge_list[i].Containers[:c], Edge_list[i].Containers[c+1:]...)
+					Edge_list[i].Containers = append(Edge_list[i].Containers[:index], Edge_list[i].Containers[index+1:]...)
 				}
+			} else {
+				index++
 			}
 		}
+		// Edge_node = Edge_list[i]
+		// fmt.Printf("\nAfter Scaling for edge node %+v", Edge_node)
+		// fmt.Printf("\n")
 	}
 
 	return Edge_list, Excess_container_list
@@ -348,8 +518,9 @@ func StartEdges(filename string) []Edge {
 	return E_list
 }
 
-func StartContainers(filename string) []Container {
+func StartContainers(filename string) ([]Container, int, int) {
 	r := parse(filename)
+	var autoscale, nonautoscale int
 	var C_list []Container
 	for {
 		data, err := r.Read()
@@ -370,15 +541,65 @@ func StartContainers(filename string) []Container {
 			log.Fatal(err1, err2)
 		}
 
+		if class == 0 {
+			autoscale++
+		} else {
+			nonautoscale++
+		}
+
 		//Initialise containr
 		C_list = append(C_list, Initialise_container(min_r, max_r, class))
 	}
 
-	return C_list
+	return C_list, autoscale, nonautoscale
 }
 
 func Print_edges(Edge_list []Edge) {
 	for i := range Edge_list {
 		fmt.Printf("\n%+v\n", Edge_list[i])
 	}
+}
+
+func Sort_Edge(Edge_list []Edge) []Edge {
+	for i := 0; i < len(Edge_list); i++ {
+		min := i
+		for j := i; j < len(Edge_list); j++ {
+			if Edge_list[j].Id <= Edge_list[min].Id {
+				min = j
+			}
+		}
+
+		Edge_list[i], Edge_list[min] = Edge_list[min], Edge_list[i]
+	}
+
+	return Edge_list
+}
+
+func No_nodes_used(Edge_list []Edge) (int, int) {
+	used, unused := 0, 0
+	for e := range Edge_list {
+		if len(Edge_list[e].Containers) > 0 {
+			used++
+		} else {
+			unused++
+		}
+	}
+
+	return used, unused
+}
+
+func Containers_kicked(Container_list []Container) (int, int, int, int) {
+	autoscale, nonautoscale := 0, 0
+	tr := 0
+	for c := range Container_list {
+		if Container_list[c].Container_class == 0 {
+			autoscale++
+			tr += Container_list[c].Max_r
+		} else {
+			nonautoscale++
+			tr += Container_list[c].Min_r
+		}
+	}
+
+	return len(Container_list), autoscale, nonautoscale, tr
 }

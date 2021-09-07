@@ -6,70 +6,75 @@ import (
 	"mitacs/cbp"
 )
 
-// func Place_containers(Edge_list []m_helper.Edge, Container_list []m_helper.Container) {
-// 	for c := range Container_list {
-// 		Edge_list = m_helper.Nextfit(Edge_list, Container_list[c])
-// 	}
-
-// 	fmt.Println(Edge_list)
-// 	fmt.Println(Container_list)
-// 	fmt.Println("TPL :", m_helper.Total_power_loss(Edge_list))
-// }
-
-// func main() {
-// 	m_helper.Edge_num = 0
-// 	fmt.Println("Container placement in edge computing using Bin packing Algorithms")
-// 	m_helper.Edge_list = append(m_helper.Edge_list, m_helper.Initialise_edge(200, 200))
-// 	m_helper.Edge_list = append(m_helper.Edge_list, m_helper.Initialise_edge(80, 150))
-// 	m_helper.Edge_list = append(m_helper.Edge_list, m_helper.Initialise_edge(120, 100))
-// 	m_helper.Edge_list = append(m_helper.Edge_list, m_helper.Initialise_edge(100, 100))
-
-// 	//Initialising containers
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 40))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 30))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(20, 30))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(50, 30))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
-// 	m_helper.Container_list = append(m_helper.Container_list, m_helper.Initialise_container(10, 20))
-
-// 	Place_containers(m_helper.Edge_list, m_helper.Container_list)
-// }
-
-func place_container(Edge_list []cbp.Edge, Container_list []cbp.Container) {
+func place_container(Edge_list []cbp.Edge, Container_list []cbp.Container, val int) {
 	fmt.Println("placing containers...")
+	Edge_list = cbp.Sort_Edge(Edge_list)
 	for c := range Container_list {
 		// fmt.Println("placing container : ", Container_list[c])
-		// Edge_list = cbp.Class_constrained_best_fit(Edge_list, Container_list[c])
-		Edge_list = cbp.Best_fit(Edge_list, Container_list[c])
+		if val == 0 {
+			Edge_list = cbp.Class_constrained_best_fit(Edge_list, Container_list[c], false)
+		} else {
+			Edge_list = cbp.Best_fit(Edge_list, Container_list[c], false)
+		}
+
 		// fmt.Printf("Edge nodes after placement: %+v", Edge_list)
 		// fmt.Println()
 	}
 
-	// fmt.Println()
-	// fmt.Printf("%+v", Edge_list)
-	cbp.Print_edges(Edge_list)
-	fmt.Println()
+	Edge_list = cbp.Sort_Edge(Edge_list)
+	fmt.Println("Before Scaling")
 	fmt.Println("Total resource loss: ", cbp.Total_resource_loss(Edge_list))
-	// fmt.Println("Activating scaling function...")
-	// ecl := make([]cbp.Container, 0)
-	// Edge_list, ecl = cbp.Random_scaling_event(0.2, Edge_list)
-	// fmt.Printf("Edge list after scale up event: %+v", Edge_list)
-	// fmt.Println("\n\nContainers kicked out: ", ecl)
+	used, unused := cbp.No_nodes_used(Edge_list)
+	fmt.Println("Nodes used and unused : ", used, unused)
+
+	//Activating scaling function
+	ecl := make([]cbp.Container, 0)
+	Edge_list = cbp.Sort_Edge(Edge_list)
+	Edge_list, ecl = cbp.Random_scaling_event(1, Edge_list)
+
+	// fmt.Println("\n\nContainers kicked out: ", len(ecl))
+	container_kicked, a, na, tr := cbp.Containers_kicked(ecl)
+	fmt.Printf("\nContainer kicked :%d\nContainers with autoscale: %d\nContainers without autoscale: %d\nTotal resource migration: %d\n", container_kicked, a, na, tr)
+
+	Edge_list = cbp.Sort_Edge(Edge_list)
+
+	for c := range ecl {
+
+		if val == 0 {
+			Edge_list = cbp.Class_constrained_best_fit(Edge_list, ecl[c], true)
+		} else {
+			Edge_list = cbp.Best_fit(Edge_list, ecl[c], true)
+		}
+	}
+
+	// cbp.Print_edges(Edge_list)
+	fmt.Println()
+	fmt.Println("After Scaling")
+	fmt.Println("Total resource loss: ", cbp.Total_resource_loss(Edge_list))
+	used, unused = cbp.No_nodes_used(Edge_list)
+	fmt.Println("Nodes used and unused : ", used, unused)
 
 }
 
 func main() {
 	cbp.Edge_num = 0
-	cbp.Edge_list = cbp.StartEdges("edge.csv")
+	cbp.Edge_list = cbp.StartEdges("Data/edge.csv")
 	// fmt.Println(cbp.Edge_list)
 
 	cbp.Container_num = 0
-	cbp.Container_list = cbp.StartContainers("container.csv")
+	var autoscale, nonautoscale int
+	cbp.Container_list, autoscale, nonautoscale = cbp.StartContainers("Data/container.csv")
 	// fmt.Println(cbp.Container_list)
 
-	place_container(cbp.Edge_list, cbp.Container_list)
+	fmt.Println("No of Edge Nodes: ", len(cbp.Edge_list))
+	fmt.Println("Number of Autoscale containers: ", autoscale)
+	fmt.Println("Number of Non-autoscale containers: ", nonautoscale)
+	fmt.Println("******************************************")
+	fmt.Println("Class Contrained best fit algorithm")
+	place_container(cbp.Edge_list, cbp.Container_list, 0)
+	fmt.Println("*******************************************")
+	fmt.Println("best fit algorithm")
+	place_container(cbp.Edge_list, cbp.Container_list, 1)
+	fmt.Println("*******************************************")
 
 }
