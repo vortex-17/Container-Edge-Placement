@@ -30,7 +30,7 @@ func place_container(Edge_list []cbp.Edge, Container_list []cbp.Container, val i
 	//Activating scaling function
 	ecl := make([]cbp.Container, 0)
 	Edge_list = cbp.Sort_Edge(Edge_list)
-	Edge_list, ecl = cbp.Random_scaling_event(1, Edge_list)
+	Edge_list, ecl = cbp.Random_scaling_event(0.8, Edge_list)
 
 	// fmt.Println("\n\nContainers kicked out: ", len(ecl))
 	container_kicked, a, na, tr := cbp.Containers_kicked(ecl)
@@ -58,12 +58,12 @@ func place_container(Edge_list []cbp.Edge, Container_list []cbp.Container, val i
 
 func main() {
 	cbp.Edge_num = 0
-	cbp.Edge_list = cbp.StartEdges("Data/edge.csv")
+	cbp.Edge_list = cbp.StartEdges("Data/edge1.csv")
 	// fmt.Println(cbp.Edge_list)
 
 	cbp.Container_num = 0
 	var autoscale, nonautoscale int
-	cbp.Container_list, autoscale, nonautoscale = cbp.StartContainers("Data/container.csv")
+	cbp.Container_list, autoscale, nonautoscale = cbp.StartContainers("Data/container1.csv")
 	// fmt.Println(cbp.Container_list)
 
 	fmt.Println("No of Edge Nodes: ", len(cbp.Edge_list))

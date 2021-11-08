@@ -444,20 +444,26 @@ func Random_scaling_event(percent float64, Edge_list []Edge) ([]Edge, []Containe
 	scaling_edge := int(percent * float64(len(Edge_list)))
 	// fmt.Println(scaling_edge)
 
+	//Going through selected edge nodes to look for scaling containers
 	for i := 0; i < scaling_edge; i++ {
-		// Edge_node := Edge_list[i]
-		// fmt.Printf("\nScaling for edge node %+v", Edge_node)
-		container_list := Edge_list[i].Containers
+
+		container_list := sort_containers(Edge_list[i].Containers)
 		index := 0
+
+		//going through containers in the ith edge node
 		for _ = range container_list {
-			// fmt.Println("Value of c: ", c)
+
 			container := Edge_list[i].Containers[index]
+
+			//Will scale only the containers with class 0
 			if container.Container_class == 0 {
 				if Check_scaling(Edge_list[i], container) == true {
 					Edge_list[i].R_cc += (container.Max_r - container.Min_r)
 					index++
 				} else {
 					// fmt.Println("Edge node at max capacity! Cannot scale the container, Removing the container")
+
+					//removing containers which cannot be scaled. They will be placed somewhere else
 					Edge_list[i].R_max -= container.Max_r
 					Edge_list[i].R_cc -= container.Min_r
 					Excess_container_list = append(Excess_container_list, container)
@@ -602,4 +608,21 @@ func Containers_kicked(Container_list []Container) (int, int, int, int) {
 	}
 
 	return len(Container_list), autoscale, nonautoscale, tr
+}
+
+func sort_containers(Container_list []Container) []Container {
+
+	for i := 0; i < len(Container_list); i++ {
+		max := i
+		for j := i; j < len(Container_list); j++ {
+			if Container_list[j].Max_r >= Container_list[max].Max_r {
+				max = j
+			}
+		}
+
+		Container_list[i], Container_list[max] = Container_list[max], Container_list[i]
+	}
+
+	return Container_list
+
 }
